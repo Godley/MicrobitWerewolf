@@ -1,6 +1,6 @@
 from enum import Enum
 from transitions import Machine
-import time, queue
+import time, queue, random, copy
 
 class States(Enum):
     REGISTER = 0
@@ -56,6 +56,27 @@ class Controller(object):
                 pass
             end = time.time()
         self.all_registered()
+
+    def sort_players(self, players):
+        orgs = {"wolves": [],
+                "villagers": []}
+        duplicate = copy.deepcopy(players)
+        while len(duplicate) > 0:
+            elem = random.choice(duplicate)
+            if len(orgs["wolves"]) < 2:
+                orgs["wolves"].append(elem)
+
+            elif "seer" not in orgs:
+                orgs["seer"] = elem
+
+            elif "doctor" not in orgs:
+                orgs["doctor"] = elem
+
+            else:
+                orgs["villagers"].append(elem)
+            duplicate.remove(elem)
+
+        return orgs
 
     def add_player(self, data):
         self.queue.put(data)
