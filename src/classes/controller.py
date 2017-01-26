@@ -12,7 +12,7 @@ class States(Enum):
     DAYTIME_KILL = 6
     END_GAME = 7
 
-
+MIN_PLAYERS = 5
 
 class Controller(object):
     states = ["register", "night_wolves", "night_doctor", "night_seer", "daytime_announce",
@@ -39,12 +39,13 @@ class Controller(object):
          "source": "*",
          "dest": "end_game"}]
     players = []
+    sorted_players = {}
     queue = queue.Queue()
 
     def __init__(self):
         self.machine = Machine(model=self, transitions=self.transitions, states=self.states, initial="register")
 
-    def await_registration(self, period=1.0, limit=60.0):
+    def await_registration(self, period=1.0, limit=60.0, enough_players=lambda e: e >= MIN_PLAYERS):
         start = time.time()
         end = time.time()
         while end - start < limit:
@@ -55,12 +56,26 @@ class Controller(object):
             except:
                 pass
             end = time.time()
-        self.all_registered()
+        player_count = len(self.players)
+        if not enough_players(player_count):
+            raise ValueError("Not enough players")
+
+    def register(self):
+        while True:
+            try:
+                self.await_registration()
+                break
+            except:
+                continue
+        self.sorted_players = self.sort_players(self.players)
 
     def sort_players(self, players):
         orgs = {"wolves": [],
                 "villagers": []}
         duplicate = copy.deepcopy(players)
+        if len(duplicate) < MIN_PLAYERS:
+            raise ValueError("Player list too short")
+
         while len(duplicate) > 0:
             elem = random.choice(duplicate)
             if len(orgs["wolves"]) < 2:
